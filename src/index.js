@@ -421,7 +421,8 @@ function getWhoisQueryFunction(domainName) {
   if (
     lowerDomain.endsWith(".com") ||
     lowerDomain.endsWith(".net") ||
-    lowerDomain.endsWith(".org")
+    lowerDomain.endsWith(".org") ||
+    lowerDomain.endsWith(".tech")
   ) {
     return queryRDAPWhois;
   }
@@ -437,7 +438,8 @@ async function queryRDAPWhois(domain) {
     const rdapServers = {
       com: 'https://rdap.verisign.com/com/v1/domain/',
       net: 'https://rdap.verisign.com/net/v1/domain/',
-      org: 'https://rdap.publicinterestregistry.org/rdap/org/domain/'
+      org: 'https://rdap.publicinterestregistry.org/rdap/org/domain/',
+	  tech: 'https://rdap.nic.tech/domain/'
     };
 
     const baseUrl = rdapServers[tld];
