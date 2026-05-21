@@ -439,7 +439,7 @@ async function queryRDAPWhois(domain) {
       com: 'https://rdap.verisign.com/com/v1/domain/',
       net: 'https://rdap.verisign.com/net/v1/domain/',
       org: 'https://rdap.publicinterestregistry.org/rdap/org/domain/',
-	  tech: 'https://rdap.nic.tech/domain/'
+	  tech: 'https://rdap.org/domain/'
     };
 
     const baseUrl = rdapServers[tld];
