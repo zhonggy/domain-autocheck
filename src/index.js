@@ -429,45 +429,117 @@ function getWhoisQueryFunction(domainName) {
   return null;
 }
 
-// WhoisJSON API查询函数
-async function queryDomainWhois(domain) {
+// RDAP 域名查询函数 (.com .net .org)
+async function queryRDAPWhois(domain) {
   try {
-    // 获取API密钥，优先使用环境变量，否则使用默认值
-    const apiKey = typeof WHOISJSON_API_KEY !== 'undefined' ? WHOISJSON_API_KEY : DEFAULT_WHOISJSON_API_KEY;
-    
-    if (!apiKey) {
-      throw new Error('WhoisJSON API密钥未配置');
+    const tld = domain.split('.').pop().toLowerCase();
+
+    const rdapServers = {
+      com: 'https://rdap.verisign.com/com/v1/domain/',
+      net: 'https://rdap.verisign.com/net/v1/domain/',
+      org: 'https://rdap.publicinterestregistry.org/rdap/org/domain/'
+    };
+
+    const baseUrl = rdapServers[tld];
+
+    if (!baseUrl) {
+      throw new Error('不支持的域名后缀');
     }
 
-    // 调用WhoisJSON API
-    const response = await fetch(`https://whoisjson.com/api/v1/whois?domain=${encodeURIComponent(domain)}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Token=${apiKey}`,
-        'Content-Type': 'application/json'
+    const response = await fetch(
+      baseUrl + encodeURIComponent(domain),
+      {
+        method: 'GET',
+        headers: {
+          accept: 'application/rdap+json'
+        }
       }
-    });
+    );
+
+    if (response.status === 404) {
+      return {
+        success: true,
+        domain: domain,
+        registered: false,
+        raw: null
+      };
+    }
 
     if (!response.ok) {
-      throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `RDAP请求失败: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
-    
-    // 解析并格式化返回数据
+
+    const getEvent = (action) => {
+      const event = (data.events || []).find(
+        (e) => e.eventAction === action
+      );
+
+      return event ? event.eventDate : null;
+    };
+
+    const registrationDate = getEvent('registration');
+
+    const expiryDate = getEvent('expiration');
+
+    const lastUpdated =
+      getEvent('last changed') ||
+      getEvent('last update of RDAP database');
+
+    let registrar = null;
+
+    const registrarEntity = (data.entities || []).find(
+      (e) => (e.roles || []).includes('registrar')
+    );
+
+    if (registrarEntity?.vcardArray) {
+      const fn = registrarEntity.vcardArray[1].find(
+        (f) => f[0] === 'fn'
+      );
+
+      if (fn) registrar = fn[3];
+    }
+
+    const nameservers = (data.nameservers || [])
+      .map((ns) => ns.ldhName)
+      .filter(Boolean);
+
     return {
       success: true,
-      domain: data.name || domain,
-      registered: data.registered || false,
-      registrationDate: data.created ? formatDate(data.created) : null,
-      expiryDate: data.expires ? formatDate(data.expires) : null,
-      lastUpdated: data.changed ? formatDate(data.changed) : null,
-      registrar: data.registrar ? data.registrar.name : null,
-      registrarUrl: data.registrar ? data.registrar.url : null,
-      nameservers: data.nameserver || [],
+      domain: domain,
+      registered: true,
+
+      registrationDate: registrationDate
+        ? formatDate(registrationDate)
+        : null,
+
+      expiryDate: expiryDate
+        ? formatDate(expiryDate)
+        : null,
+
+      lastUpdated: lastUpdated
+        ? formatDate(lastUpdated)
+        : null,
+
+      registrar: registrar,
+      registrarUrl: null,
+
+      nameservers: nameservers,
+
       status: data.status || [],
-      dnssec: data.dnssec || null,
-      raw: data // 保留原始数据以备后用
+
+      dnssec: data.secureDNS
+        ? (
+            data.secureDNS.delegationSigned
+              ? 'signed'
+              : 'unsigned'
+          )
+        : null,
+
+      raw: data
     };
   } catch (error) {
     return {
@@ -477,7 +549,6 @@ async function queryDomainWhois(domain) {
     };
   }
 }
-
 // PP.UA 域名查询函数 (通过 TCP socket 直连 whois.pp.ua)
 async function queryPpUaWhois(domain) {
   try {
