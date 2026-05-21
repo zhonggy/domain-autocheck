@@ -549,6 +549,8 @@ async function queryRDAPWhois(domain) {
     };
   }
 }
+
+const queryDomainWhois = queryRDAPWhois;
 // PP.UA 域名查询函数 (通过 TCP socket 直连 whois.pp.ua)
 async function queryPpUaWhois(domain) {
   try {
