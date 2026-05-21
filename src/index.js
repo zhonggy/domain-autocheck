@@ -439,7 +439,7 @@ async function queryRDAPWhois(domain) {
       com: 'https://rdap.verisign.com/com/v1/domain/',
       net: 'https://rdap.verisign.com/net/v1/domain/',
       org: 'https://rdap.publicinterestregistry.org/rdap/org/domain/',
-	  tech: 'https://rdap.org/domain/'
+	  tech: 'https://rdap.identitydigital.services/rdap/domain/'
     };
 
     const baseUrl = rdapServers[tld];
@@ -448,15 +448,16 @@ async function queryRDAPWhois(domain) {
       throw new Error('不支持的域名后缀');
     }
 
-    const response = await fetch(
-      baseUrl + encodeURIComponent(domain),
-      {
-        method: 'GET',
-        headers: {
-          accept: 'application/rdap+json'
-        }
-      }
-    );
+	  const response = await fetch(
+		  baseUrl + encodeURIComponent(domain),
+		  {
+			  method: 'GET',
+			  headers: {
+				  'accept': 'application/rdap+json, application/json',
+				  'user-agent': 'Mozilla/5.0'
+			  }
+		  }
+	  );
 
     if (response.status === 404) {
       return {
