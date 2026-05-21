@@ -399,28 +399,33 @@ export function isMutatingMethod(method) {
 // 判断域名是否支持WHOIS查询，返回对应的查询函数或null
 function getWhoisQueryFunction(domainName) {
   const lowerDomain = domainName.toLowerCase();
-  const dotCount = lowerDomain.split('.').length - 1;
 
-  // pp.ua 二级域名
-  if (lowerDomain.endsWith('.pp.ua')) {
+  if (lowerDomain.endsWith(".pp.ua")) {
     return queryPpUaWhois;
   }
-  // eu.cc 二级域名
-  if (lowerDomain.endsWith('.eu.cc')) {
+
+  if (lowerDomain.endsWith(".eu.cc")) {
     return queryEuCcWhois;
   }
-  // DigitalPlat 二级域名
-  if (lowerDomain.endsWith('.qzz.io') || lowerDomain.endsWith('.dpdns.org') ||
-      lowerDomain.endsWith('.us.kg') || lowerDomain.endsWith('.xx.kg')) {
+
+  if (
+    lowerDomain.endsWith(".qzz.io") ||
+    lowerDomain.endsWith(".dpdns.org") ||
+    lowerDomain.endsWith(".us.kg") ||
+    lowerDomain.endsWith(".xx.kg")
+  ) {
     return queryDigitalPlatWhois;
   }
-  // 一级域名且配置了WhoisJSON API密钥
-  if (dotCount === 1) {
-    const apiKey = typeof WHOISJSON_API_KEY !== 'undefined' ? WHOISJSON_API_KEY : DEFAULT_WHOISJSON_API_KEY;
-    if (apiKey) {
-      return queryDomainWhois;
-    }
+
+  // RDAP支持
+  if (
+    lowerDomain.endsWith(".com") ||
+    lowerDomain.endsWith(".net") ||
+    lowerDomain.endsWith(".org")
+  ) {
+    return queryRDAPWhois;
   }
+
   return null;
 }
 
