@@ -429,7 +429,7 @@ function getWhoisQueryFunction(domainName) {
   return null;
 }
 
-// RDAP 域名查询函数 (.com .net .org)
+// RDAP 查询函数（替代 WhoisJSON）
 async function queryRDAPWhois(domain) {
   try {
     const tld = domain.split('.').pop().toLowerCase();
@@ -475,7 +475,7 @@ async function queryRDAPWhois(domain) {
 
     const getEvent = (action) => {
       const event = (data.events || []).find(
-        (e) => e.eventAction === action
+        e => e.eventAction === action
       );
 
       return event ? event.eventDate : null;
@@ -492,19 +492,19 @@ async function queryRDAPWhois(domain) {
     let registrar = null;
 
     const registrarEntity = (data.entities || []).find(
-      (e) => (e.roles || []).includes('registrar')
+      e => (e.roles || []).includes('registrar')
     );
 
-    if (registrarEntity?.vcardArray) {
+    if (registrarEntity && registrarEntity.vcardArray) {
       const fn = registrarEntity.vcardArray[1].find(
-        (f) => f[0] === 'fn'
+        f => f[0] === 'fn'
       );
 
       if (fn) registrar = fn[3];
     }
 
     const nameservers = (data.nameservers || [])
-      .map((ns) => ns.ldhName)
+      .map(ns => ns.ldhName)
       .filter(Boolean);
 
     return {
